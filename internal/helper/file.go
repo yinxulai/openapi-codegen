@@ -32,19 +32,19 @@ func FindFilePathsByExtension(dirPath string, fileExtensions []string) ([]string
 	return filePaths, nil
 }
 
-func DiffFolderContentsRecursive(target, target2 string) (bool, error) {
+func DiffFolderContentsRecursive(target, target2 string) (result *string, err error) {
 	files1, err := os.ReadDir(target)
 	if err != nil {
-			return false, err
+			return result, err
 	}
 
 	files2, err := os.ReadDir(target2)
 	if err != nil {
-			return false, err
+			return result, err
 	}
 
 	if len(files1) != len(files2) {
-			return false, nil
+			return result, nil
 	}
 
 	for i := range files1 {
@@ -52,19 +52,19 @@ func DiffFolderContentsRecursive(target, target2 string) (bool, error) {
 			path2 := filepath.Join(target2, files1[i].Name())
 
 			if files1[i].IsDir() {
-					equal, err := DiffFolderContentsRecursive(path1, path2)
-					if err != nil || !equal {
-							return equal, err
+				diffResult, err := DiffFolderContentsRecursive(path1, path2)
+					if err != nil || diffResult != nil {
+							return diffResult, err
 					}
 			} else {
 					equal, err := DiffFileContents(path1, path2)
 					if err != nil || !equal {
-							return equal, err
+							return &path1, err
 					}
 			}
 	}
 
-	return true, nil
+	return nil, nil
 }
 
 func DiffFileContents(path1, path2 string) (bool, error) {

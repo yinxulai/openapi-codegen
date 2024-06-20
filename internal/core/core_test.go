@@ -44,14 +44,14 @@ func TestBasic(t *testing.T) {
 			return
 		}
 
-		expected, err := helper.DiffFolderContentsRecursive(caseData.OutputPath, caseData.ExpectedPath)
+		unexpectedFile, err := helper.DiffFolderContentsRecursive(caseData.OutputPath, caseData.ExpectedPath)
 		if err != nil {
 			t.Errorf("Comparison of generated results failed %s, template %s", err, caseData.RootPath)
 			return
 		}
 
-		if !expected {
-			t.Errorf("The generated results are inconsistent with expectations template %s", caseData.RootPath)
+		if unexpectedFile != nil {
+			t.Errorf("The generated results are inconsistent with expectations template %s", *unexpectedFile)
 			return
 		}
 	}
