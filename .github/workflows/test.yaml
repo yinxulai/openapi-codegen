@@ -24,4 +24,3 @@ jobs:
           push: never
           runCmd: |
             make test
-            make build
