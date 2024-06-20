@@ -12,7 +12,7 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "ocg",
+	Use:   "openapi-codegen",
 	Short: "Generate code through openapi",
 	Long:  `openapi-codegen is a cli tool that generates code through the openapi specification. It has a built-in highly flexible template engine that can be easily customized.`,
 
