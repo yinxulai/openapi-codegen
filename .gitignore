@@ -1,2 +1,3 @@
 .coverage
 test_templates/*/generated
+.DS_Store
