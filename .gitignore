@@ -1,3 +1,4 @@
+.DS_Store
 .coverage
 test_templates/*/generated
-.DS_Store
+templates/go-server/generated/*
