@@ -1,0 +1,134 @@
+{
+  "servers": [],
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Demo",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "宠物"
+    }
+  ],
+  "paths": {
+    "/pet/{petId}/{petName}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Category"
+                    },
+                    "code": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 0,
+                      "description": "状态码"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "data"
+                  ]
+                },
+                "examples": {
+                  "1": {
+                    "summary": "成功示例",
+                    "value": {
+                      "code": 0,
+                      "data": {
+                        "name": "Hello Kity",
+                        "photoUrls": [
+                          "http://dummyimage.com/400x400"
+                        ],
+                        "id": 3,
+                        "category": {
+                          "id": 71,
+                          "name": "Cat"
+                        },
+                        "tags": [
+                          {
+                            "id": 22,
+                            "name": "Cat"
+                          }
+                        ],
+                        "status": "sold"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "",
+        "tags": [
+          "宠物"
+        ],
+        "operationId": "GetPetById",
+        "parameters": [
+          {
+            "example": "1",
+            "schema": {
+              "type": "integer"
+            },
+            "name": "petId",
+            "in": "path",
+            "description": "宠物 ID",
+            "required": true
+          },
+          {
+            "description": "宠物名",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "name": "petName",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Category"
+              }
+            }
+          }
+        },
+        "security": [],
+        "summary": "查询宠物详情",
+        "deprecated": false
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Category": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "分组ID编号"
+          },
+          "name": {
+            "type": "string",
+            "description": "分组名称"
+          }
+        },
+        "xml": {
+          "name": "Category"
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {}
+  }
+}

@@ -1,4 +1,4 @@
-BINARY_NAME=main
+BINARY_NAME=ocg
 
 ## help: print this help message
 .PHONY: help

@@ -1,0 +1,12 @@
+{
+  "cSpell.words": [
+    "codegen",
+    "goja",
+    "gotmpl",
+    "libopenapi",
+    "openapi",
+    "outpath",
+    "tmpl"
+  ],
+  "apimatic.notifications.whenApiFileIsDetected.enabled": false
+}
