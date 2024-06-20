@@ -15,11 +15,6 @@ dev:
 		--misc.clean_on_exit "true" \
 		--build.cmd "make build" --build.bin "./${BINARY_NAME}" --build.delay "100"
 
-## build: build the application
-.PHONY: build
-build:
-	go build -o ${BINARY_NAME} main.go
-
 ## test: test the application
 .PHONY: test
 test:
