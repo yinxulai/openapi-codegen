@@ -8,5 +8,8 @@
     "outpath",
     "tmpl"
   ],
-  "apimatic.notifications.whenApiFileIsDetected.enabled": false
+  "apimatic.notifications.whenApiFileIsDetected.enabled": false,
+  "go-template.patterns": [
+    "**/*.tmpl"
+  ]
 }

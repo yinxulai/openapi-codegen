@@ -1,4 +1,4 @@
 .DS_Store
 .coverage
+templates/*/generated
 test_templates/*/generated
-templates/go-server/generated/*

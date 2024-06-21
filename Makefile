@@ -15,6 +15,11 @@ dev:
 		--misc.clean_on_exit "true" \
 		--build.cmd "make build" --build.bin "./${BINARY_NAME}" --build.delay "100"
 
+## dev-template: dev-template a template
+.PHONY: dev-template
+dev-template:
+	go run main.go -f ./templates/example/openapi/v3.0/petstore.json -t ./templates/example -o ./templates/example/generated
+
 ## test: test the application
 .PHONY: test
 test:

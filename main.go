@@ -42,6 +42,7 @@ func init() {
 	rootCmd.Flags().StringP("template", "t", "./", "Specifying the template directory")
 	rootCmd.Flags().StringP("file", "f", "./openapi.json", "Specifying the openapi file")
 	rootCmd.Flags().StringP("output", "o", "./generate", "Specifying the output directory")
+	rootCmd.Flags().BoolP("verify", "v",  true, "Enable format verification openapi file")
 
 	rootCmd.MarkFlagRequired("template")
 	rootCmd.MarkFlagRequired("file")

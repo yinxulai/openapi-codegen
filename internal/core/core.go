@@ -12,6 +12,7 @@ type Config struct {
 	OutputPath    string
 	TemplatePath  string
 	ApiSchemaPath string
+	VerifyApiSchema bool
 }
 
 func Run(config *Config) error {
@@ -42,7 +43,7 @@ func Run(config *Config) error {
 		return err
 	}
 
-	apiSchemaData, err := openapi.Load(absoluteApiSchemaPath)
+	apiSchemaData, err := openapi.Load(absoluteApiSchemaPath, config.VerifyApiSchema)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,69 @@
+{{ range $rootFiled, $rootFiledValue := . }}
+
+{{ if eq $rootFiled "tags" }}
+handle tags
+{{ end }}
+
+{{ if eq $rootFiled "servers" }}
+handle servers
+{{ end }}
+
+{{ if eq $rootFiled "paths" }}
+handle paths
+{{ end }}
+
+{{ if eq $rootFiled "components" }}
+{{ range $componentFiled, $componentFiledValue := $rootFiledValue }}
+
+{{ if eq $componentFiled "schemas" }}
+{{ if (index $componentFiledValue "$ref") }}
+handle components schemas ref
+{{ else }}
+handle components schemas object
+{{ end }}
+{{ end }}
+
+{{ if eq $componentFiled "responses" }}
+handle components responses
+{{ end }}
+
+{{ if eq $componentFiled "parameters" }}
+handle components parameters
+{{ end }}
+
+{{ if eq $componentFiled "examples" }}
+handle components examples
+{{ end }}
+
+{{ if eq $componentFiled "requestBodies" }}
+handle components requestBodies
+{{ end }}
+
+{{ if eq $componentFiled "headers" }}
+handle components headers
+{{ end }}
+
+{{ if eq $componentFiled "securitySchemes" }}
+handle components securitySchemes
+{{ end }}
+
+{{ if eq $componentFiled "links" }}
+handle components links
+{{ end }}
+
+{{ if eq $componentFiled "callbacks" }}
+handle components callbacks
+{{ end }}
+
+{{ if eq $componentFiled "pathItems" }}
+handle components pathItems
+{{ end }}
+
+{{ end }}
+{{ end }}
+
+{{ if eq $rootFiled "webhooks" }}
+handle webhooks
+{{ end }}
+
+{{ end }}

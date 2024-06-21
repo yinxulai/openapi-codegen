@@ -14,7 +14,7 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
-func Load(schemaPath string) (any, error) {
+func Load(schemaPath string, verify bool) (any, error) {
 	slog.Info(
 		"load openapi file",
 		slog.String("file", schemaPath),
@@ -29,38 +29,41 @@ func Load(schemaPath string) (any, error) {
 		return nil, err
 	}
 
-	// 校验格式
-	document, docErrs := libopenapi.NewDocument(data)
-	if docErrs != nil {
-		slog.Error(
-			"read openapi as document failed",
-			slog.Any("error", err),
-		)
-		return nil, err
-	}
+	if verify {
 
-	parameterValidator, NewValidatorErrors := validator.NewValidator(document)
-	if len(NewValidatorErrors) > 0 {
-		for i := range NewValidatorErrors {
-			err := NewValidatorErrors[i]
-			slog.Error("create openapi schema Validator failed:", slog.Any("error", err))
-		}
-	}
-
-	ok, validateErrors := parameterValidator.ValidateDocument()
-	if len(validateErrors) > 0 {
-		for i := range validateErrors {
-			err := validateErrors[i]
-			slog.Error("openapi schema validate failed",
-				slog.String("error", err.Message),
-				slog.String("reason", err.Reason),
-				slog.String("HowToFix", err.HowToFix),
+		// 校验格式
+		document, docErrs := libopenapi.NewDocument(data)
+		if docErrs != nil {
+			slog.Error(
+				"read openapi as document failed",
+				slog.Any("error", docErrs),
 			)
+			return nil, err
 		}
-	}
 
-	if !ok {
-		panic(NewValidatorErrors)
+		parameterValidator, NewValidatorErrors := validator.NewValidator(document)
+		if len(NewValidatorErrors) > 0 {
+			for i := range NewValidatorErrors {
+				err := NewValidatorErrors[i]
+				slog.Error("create openapi schema Validator failed:", slog.Any("error", err))
+			}
+		}
+
+		ok, validateErrors := parameterValidator.ValidateDocument()
+		if len(validateErrors) > 0 {
+			for i := range validateErrors {
+				err := validateErrors[i]
+				slog.Error("openapi schema validate failed",
+					slog.String("error", err.Message),
+					slog.String("reason", err.Reason),
+					slog.String("HowToFix", err.HowToFix),
+				)
+			}
+		}
+
+		if !ok {
+			panic(NewValidatorErrors)
+		}
 	}
 
 	schema, err := parseOpenapiFile(schemaPath, data)
