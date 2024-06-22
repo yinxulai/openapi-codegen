@@ -21,7 +21,7 @@ func Render(templatePath string, outputPath string, data any) error {
 
 	scriptFuncs, err := script.Load(templatePath)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	templateFilePaths, err := helper.FindFilePathsByExtension(templatePath, []string{templateFileExtension})

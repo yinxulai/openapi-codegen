@@ -24,7 +24,7 @@ dev-template:
 .PHONY: test
 test:
 	mkdir -p .coverage
-	go test -v -race -cover -p 1 -coverprofile=.coverage/coverage.out ./...
+	go test -v -race -cover -p 1 -coverprofile=.coverage/coverage.out ./internal/...
 	go tool cover -html=.coverage/coverage.out -o .coverage/coverage.html
 
 ## tidy: format code and tidy modfile

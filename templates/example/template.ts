@@ -1,3 +1,6 @@
+type Command = (args: any[]) => string
+declare function registerTemplateCommand(name: string, command: Command): void
+
 registerTemplateCommand('throw', function (args) {
   throw Array.isArray(args) ? args.join(',') : args
 })
