@@ -10,24 +10,33 @@ import (
 
 func TestCreateTemplateCommandForScript(t *testing.T) {
 	testJavascriptList := []struct {
+		filename     string
 		script       string
 		result       any
 		errorMessage string
 	}{
 		{
+			filename:     "test1.js",
 			script:       `registerTemplateCommand('test1', data => {return 1})`,
 			errorMessage: "",
 			result:       int64(1),
 		},
 		{
+			filename:     "test1.js",
 			script:       `registerTemplateCommand('test2', data => {throw 'throw error'})`,
 			errorMessage: "throw error",
 			result:       nil,
 		},
+		{
+			filename:     "test1.ts",
+			script:       `registerTemplateCommand('test2', (data: string): string => { return 1 })`,
+			errorMessage: "",
+			result:       int64(1),
+		},
 	}
 
 	for _, testCase := range testJavascriptList {
-		templateCommands, err := LoadTemplateCommandForScript("test-1", testCase.script)
+		templateCommands, err := LoadTemplateCommandForScript(testCase.filename, testCase.script)
 		if err != nil {
 			t.Error(err)
 			return
@@ -78,7 +87,7 @@ func TestRestParams(t *testing.T) {
 		}
 	`)
 
-	var test func (params ...any) any
+	var test func(params ...any) any
 	vm.ExportTo(vm.Get("test"), &test)
 	test(1)
 }
