@@ -4,10 +4,12 @@ import (
 	"html/template"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/dop251/goja"
 	"github.com/yinxulai/openapi-codegen/internal/helper"
 	"github.com/yinxulai/openapi-codegen/internal/template/script/console"
+	"github.com/yinxulai/openapi-codegen/internal/template/script/typescript"
 )
 
 type TemplateCommand struct {
@@ -16,7 +18,7 @@ type TemplateCommand struct {
 	handler  func(params ...any) (result any, err error)
 }
 
-var scriptExtensions = []string{".js"}
+var scriptExtensions = []string{".js", ".ts"}
 
 func Load(templatePath string) (template.FuncMap, error) {
 	funcMap := template.FuncMap{}
@@ -29,7 +31,7 @@ func Load(templatePath string) (template.FuncMap, error) {
 		relativePath, err := helper.GetRelativePath(templatePath, scriptFilePath)
 		if err != nil {
 			slog.Error(
-				"get template script file relative path failed", 
+				"get template script file relative path failed",
 				slog.Any("file", relativePath),
 				slog.Any("error", err),
 			)
@@ -41,7 +43,7 @@ func Load(templatePath string) (template.FuncMap, error) {
 		script, err := os.ReadFile(scriptFilePath)
 		if err != nil {
 			slog.Error(
-				"read template script file failed", 
+				"read template script file failed",
 				slog.Any("file", relativePath),
 				slog.Any("error", err),
 			)
@@ -51,7 +53,7 @@ func Load(templatePath string) (template.FuncMap, error) {
 		newTemplateCommands, err := LoadTemplateCommandForScript(scriptFilePath, string(script))
 		if err != nil {
 			slog.Error(
-				"load template script failed", 
+				"load template script failed",
 				slog.Any("file", relativePath),
 				slog.Any("error", err),
 			)
@@ -104,7 +106,16 @@ func LoadTemplateCommandForScript(filename string, script string) ([]*TemplateCo
 		return templateCommands, err
 	}
 
-	_, err = scriptRuntimeVm.RunString(script)
+	var compileResult = script
+	if strings.HasSuffix(filename, ".ts") {
+		compileResult, err = typescript.Compile(script)
+		if err != nil {
+			slog.Error("compile typescript failed", slog.Any("error", err))
+			return templateCommands, err
+		}
+	}
+
+	_, err = scriptRuntimeVm.RunString(compileResult)
 	if err != nil {
 		slog.Error("load template script failed", slog.Any("error", err))
 		return templateCommands, err
