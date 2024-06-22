@@ -2,6 +2,7 @@ package typescript
 
 import (
 	_ "embed"
+	"log/slog"
 
 	"github.com/dop251/goja"
 )
@@ -16,8 +17,20 @@ func Compile(source string) (output string, err error) {
 
 		_, err = compileVm.RunString(typescriptSource)
 		if err != nil {
-			return
+			return output, err
 		}
+
+		versionValue, err := compileVm.RunString("ts.version")
+		if err != nil {
+			return output, err
+		}
+
+		var typescriptVersion string
+		if err = compileVm.ExportTo(versionValue, &typescriptVersion); err != nil {
+			return output, err
+		}
+
+		slog.Info("use typescript compiler", slog.String("version", typescriptVersion))
 	}
 
 	err = compileVm.Set("transpileSource", source)
