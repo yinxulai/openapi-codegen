@@ -7,7 +7,7 @@ openapi 代码生成器
 - [x] 解析和加载 openapi 格式文件
 - [x] 支持自定义模渲染板（基于 go/template）
 - [x] 支持通过 JavaScript 自定义模板脚本命令
-- [ ] 支持通过 TypeScript 自定义模板脚本命令
+- [x] 支持通过 TypeScript 自定义模板脚本命令
 
 ## 使用
 

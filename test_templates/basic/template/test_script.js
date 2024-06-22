@@ -2,11 +2,6 @@ registerTemplateCommand('joinPath', function (args) {
   return args.join('/')
 })
 
-registerTemplateCommand('throwEcho', function (data) {
-  throw data
-})
-
-
 registerTemplateCommand('jsonStringify', function (data) {
   function sortJSON(data, order = 'asc') {
     // 判断数据类型
