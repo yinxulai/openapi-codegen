@@ -1,3 +1,5 @@
+import '../../runtime.d.ts'
+
 function normalizeFieldNames(value: string, isPublic = true): string {
   // 去除前后空格
   value = value.trim()
@@ -13,6 +15,25 @@ function normalizeFieldNames(value: string, isPublic = true): string {
   return isPublic
     ? camelCaseStr.charAt(0).toUpperCase() + camelCaseStr.slice(1)
     : camelCaseStr.charAt(0).toLowerCase() + camelCaseStr.slice(1)
+}
+
+function isReferenceObject(schema: unknown): schema is OpenAPIV3.ReferenceObject {
+  return schema != null && typeof schema === 'object' && '$ref' in schema
+}
+
+function isArraySchemaObject(schema: unknown): schema is OpenAPIV3.ArraySchemaObject {
+  return schema != null
+    && typeof schema === 'object'
+    && 'items' in schema
+    && 'type' in schema
+    && schema.type === 'array'
+}
+
+function isNonArraySchemaObject(schema: unknown): schema is OpenAPIV3.NonArraySchemaObject {
+  return schema != null
+    && typeof schema === 'object'
+    && 'type' in schema
+    && schema.type !== 'array'
 }
 
 registerTemplateCommand('checkSupportedVersion', (args: [OpenAPIV3.Document]): string => {
@@ -39,19 +60,42 @@ registerTemplateCommand('schemaObjectToStruct', (args: [OpenAPIV3.SchemaObject, 
   const codeLines: string[] = []
 
   if (schema.type === 'array') {
-    codeLines.push(`type ${normalizeFieldNames(name)} = []struct {`)
-  } else {
-    codeLines.push(`type ${normalizeFieldNames(name)} struct {`)
+    throw 'array is not supported'
   }
 
+  if (Array.isArray(schema.enum)) {
+    codeLines.push(`const (`)
+    for (const enumItem of schema.enum) {
+      if (schema.type == "string") {
+        codeLines.push(`  ${normalizeFieldNames(name)} = "${enumItem}"`)
+      } else {
+        throw 'enum type is not supported'
+      }
+    }
 
+    codeLines.push(`)`)
+    return codeLines.join('\n')
+  }
 
+  if (schema.type === 'object') {
+    codeLines.push(`type ${normalizeFieldNames(name)} struct {`)
 
+    if (schema.properties) {
+      for (const key in schema.properties) {
+        const property = schema.properties[key]
+        codeLines.push(`  ${normalizeFieldNames(key)} ${normalizeFieldNames(property)}`)
+      }
+    }
 
-  codeLines.push(']')
+    schema.properties
+
+    codeLines.push(`type ${normalizeFieldNames(name)} = string`)
+  }
+
   return codeLines.join('\n')
 })
 
+// copy from https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md
 export namespace OpenAPIV3 {
   export interface Document<T extends {} = {}> {
     openapi: string
@@ -62,11 +106,6 @@ export namespace OpenAPIV3 {
     security?: SecurityRequirementObject[]
     tags?: TagObject[]
     externalDocs?: ExternalDocumentationObject
-    'x-express-openapi-additional-middleware'?: (
-      | ((request: any, response: any, next: any) => Promise<void>)
-      | ((request: any, response: any, next: any) => void)
-    )[]
-    'x-express-openapi-validation-strict'?: boolean
   }
 
   export interface InfoObject {
