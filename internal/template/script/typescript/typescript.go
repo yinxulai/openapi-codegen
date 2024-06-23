@@ -1,59 +1,21 @@
 package typescript
 
 import (
-	_ "embed"
+	"errors"
 	"log/slog"
 
-	"github.com/dop251/goja"
+	"github.com/evanw/esbuild/pkg/api"
 )
 
-//go:embed typescript.js
-var typescriptSource string
-var compileVm *goja.Runtime
-
 func Compile(source string) (output string, err error) {
-	if compileVm == nil {
-		compileVm = goja.New()
+  result := api.Transform(source, api.TransformOptions{
+    Loader: api.LoaderTS,
+  })
 
-		_, err = compileVm.RunString(typescriptSource)
-		if err != nil {
-			return output, err
-		}
+  if len(result.Errors) > 0 {
+		slog.Error("Compile typescript failed", slog.Any("error", result.Errors))
+    return "", errors.New("Compile typescript failed")
+  }
 
-		versionValue, err := compileVm.RunString("ts.version")
-		if err != nil {
-			return output, err
-		}
-
-		var typescriptVersion string
-		if err = compileVm.ExportTo(versionValue, &typescriptVersion); err != nil {
-			return output, err
-		}
-
-		slog.Info("use typescript compiler", slog.String("version", typescriptVersion))
-	}
-
-	err = compileVm.Set("transpileSource", source)
-	if err != nil {
-		return
-	}
-
-	transpileScriptSource := `
-		var transpileResult = ts.transpile(transpileSource, {
-			target: ts.ScriptTarget.ES5, // 指定编译目标为 ES5
-			module: ts.ModuleKind.CommonJS // 指定模块系统为 CommonJS
-		})
-	`
-
-	if _, err = compileVm.RunString(transpileScriptSource); err != nil {
-		return
-	}
-
-	if err = compileVm.ExportTo(compileVm.Get("transpileResult"), &output); err != nil {
-		return
-	}
-
-	// clean
-	compileVm.RunString(`transpileResult = ""`)
-	return
+	return string(result.Code), nil
 }
