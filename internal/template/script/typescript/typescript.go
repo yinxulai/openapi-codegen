@@ -10,6 +10,8 @@ import (
 func Compile(source string) (output string, err error) {
   result := api.Transform(source, api.TransformOptions{
     Loader: api.LoaderTS,
+		MinifySyntax: false,
+		Target: api.ES2015,
   })
 
   if len(result.Errors) > 0 {
