@@ -91,6 +91,86 @@ function schemaObjectToStruct(schema: SchemaObject | ReferenceObject): string {
   throw 'unsupported schema type'
 }
 
+function OperationObjectToRequestStruct(schema: OperationObject): string {
+  const codeLines: string[] = [`struct {`]
+
+  if (schema.parameters) {
+    const structFieldsMap = new Map<ParameterInType, string[]>()
+
+    for (const key in schema.parameters) {
+      const parameter = schema.parameters[key]
+      if (isReferenceObject(parameter)) {
+        const stmts = parameter.$ref.split('/')
+        return stmts[stmts.length - 1]
+      }
+
+      if (parameter.schema) {
+        const struct = schemaObjectToStruct(parameter.schema)
+        const required = parameter.required == true ? '*' : ''
+        const fields = structFieldsMap.get(parameter.in) || []
+        fields.push(`${parameter.name} ${required}${struct}`)
+        structFieldsMap.set(parameter.in, fields)
+      }
+
+      if (parameter.content) {
+        throw 'unsupported parameter type'
+      }
+
+    }
+
+    for (const [inType, fields] of structFieldsMap.entries()) {
+      if (fields && fields.length > 0) {
+        codeLines.push(`${inType} struct {`)
+        for (const field of fields) {
+          // TODO sort
+          codeLines.push(field)
+        }
+        codeLines.push('}')
+      }
+    }
+  }
+
+  if (schema.requestBody) {
+    if (isReferenceObject(schema.requestBody)) {
+      const stmts = schema.requestBody.$ref.split('/')
+      codeLines.push(`body ${stmts[stmts.length - 1]}`)
+    } else {
+      if (Object.keys(schema.requestBody.content).length != 1) {
+        throw 'unsupported'
+      }
+
+      const body = schema.requestBody.content[0]
+
+      if (body.schema == null) {
+        throw 'unsupported'
+      }
+
+      const required = schema.requestBody.required ? '*' : ''
+      codeLines.push(`body ${required}${schemaObjectToStruct(body.schema)}`)
+    }
+  }
+
+  codeLines.push('}')
+  return codeLines.join('\n')
+}
+
+function OperationObjectToResponseStruct(schema: OperationObject): string {
+  const codeLines: string[] = [`struct {`]
+
+  for (const key in schema.responses) {
+    const response = schema.responses[key]
+    if (key.toLowerCase() === 'default') {
+      codeLines.push(`default ${}`)
+
+    } else {
+
+    }
+  }
+
+
+  return ''
+}
+
 registerTemplateCommand('checkSupportedVersion', (args: [Document]): string => {
   const [doc] = args
   if (doc.openapi !== '3.0.0') {
@@ -212,9 +292,11 @@ interface ExternalDocumentationObject {
   url: string
 }
 
+type ParameterInType = 'path' | 'query' | 'header' | 'cookie'
+
 interface ParameterObject extends ParameterBaseObject {
   name: string
-  in: string
+  in: ParameterInType
 }
 
 interface HeaderObject extends ParameterBaseObject {}
