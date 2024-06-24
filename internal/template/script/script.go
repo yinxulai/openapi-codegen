@@ -117,7 +117,7 @@ func LoadTemplateCommandForScript(filename string, script string) ([]*TemplateCo
 
 	_, err = scriptRuntimeVm.RunString(compileResult)
 	if err != nil {
-		slog.Error("load template script failed", slog.Any("error", err))
+		slog.Error("load template script failed", slog.Any("error", err), slog.String("script", compileResult))
 		return templateCommands, err
 	}
 

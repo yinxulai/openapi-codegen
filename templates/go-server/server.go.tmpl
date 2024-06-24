@@ -1,1 +1,4 @@
-{{ . | checkSupportedVersion }}
+{{ checkSupportedVersion . }}
+{{ range $key, $value := .components.schemas }}
+{{ test  $value $key }}
+{{end}}

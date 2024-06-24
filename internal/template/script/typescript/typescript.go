@@ -8,16 +8,24 @@ import (
 )
 
 func Compile(source string) (output string, err error) {
-  result := api.Transform(source, api.TransformOptions{
-    Loader: api.LoaderTS,
+	result := api.Transform(source, api.TransformOptions{
+		Loader:       api.LoaderTS,
+		Target:       api.ES2015,
 		MinifySyntax: false,
-		Target: api.ES2015,
-  })
+	})
 
-  if len(result.Errors) > 0 {
-		slog.Error("Compile typescript failed", slog.Any("error", result.Errors))
-    return "", errors.New("Compile typescript failed")
-  }
+	if len(result.Errors) > 0 {
+		for _, message := range result.Errors {
+			slog.Error(
+				"Compile typescript failed",
+				slog.Any("file", message.Location.File),
+				slog.Any("line", message.Location.Line),
+				slog.Any("lineText", message.Location.LineText),
+			)
+		}
+
+		return "", errors.New("Compile typescript failed")
+	}
 
 	return string(result.Code), nil
 }

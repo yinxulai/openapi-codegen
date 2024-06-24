@@ -18,7 +18,7 @@ dev:
 ## dev-template: dev-template a template
 .PHONY: dev-template
 dev-template:
-	go run main.go -f ./templates/example/openapi/v3.0/petstore.json -t ./templates/example -o ./templates/example/generated
+	go run main.go -f ./templates/example/openapi/v3.0/petstore.json -t ./templates/go-server -o ./templates/go-server/generated
 
 ## test: test the application
 .PHONY: test
