@@ -1,4 +1,4 @@
-function toFieldNames(value: string, isPublic = true): string {
+function toFieldName(value: string, isPublic = true): string {
   // 去除前后空格
   value = value.trim()
 
@@ -34,7 +34,11 @@ function isNonArraySchemaObject(schema: unknown): schema is NonArraySchemaObject
     && schema.type !== 'array'
 }
 
-function schemaObjectToStruct(schema: SchemaObject | ReferenceObject): string {
+function isSchemaObject(schema: unknown): schema is SchemaObject {
+  return isArraySchemaObject(schema) || isNonArraySchemaObject(schema)
+}
+
+function SchemaObjectToStruct(schema: SchemaObject | ReferenceObject): string {
   if (isReferenceObject(schema)) {
     // #components/xxxx/name
     const stmts = schema.$ref.split('/')
@@ -42,7 +46,7 @@ function schemaObjectToStruct(schema: SchemaObject | ReferenceObject): string {
   }
 
   if (isArraySchemaObject(schema)) {
-    return `[]${schemaObjectToStruct(schema.items)}`
+    return `[]${SchemaObjectToStruct(schema.items)}`
   }
 
   if (isNonArraySchemaObject(schema) && schema.type === 'object') {
@@ -52,7 +56,7 @@ function schemaObjectToStruct(schema: SchemaObject | ReferenceObject): string {
       for (const key in schema.properties) {
         const property = schema.properties[key]
         const isRequired = schema.required?.includes(key) || false
-        codeLines.push(`  ${toFieldNames(key)} ${isRequired ? '*' : ''}${schemaObjectToStruct(property)}`)
+        codeLines.push(`  ${toFieldName(key)} ${isRequired ? '*' : ''}${SchemaObjectToStruct(property)}`)
       }
     }
     codeLines.push('}')
@@ -92,6 +96,15 @@ function schemaObjectToStruct(schema: SchemaObject | ReferenceObject): string {
 }
 
 function OperationObjectToRequestStruct(schema: OperationObject): string {
+  // design:
+  // struct {
+  //   path struct{}
+  //   query struct{}
+  //   header struct{}
+  //   cookie struct{}
+  //   content struct{}
+  // }
+
   const codeLines: string[] = [`struct {`]
 
   if (schema.parameters) {
@@ -100,12 +113,12 @@ function OperationObjectToRequestStruct(schema: OperationObject): string {
     for (const key in schema.parameters) {
       const parameter = schema.parameters[key]
       if (isReferenceObject(parameter)) {
-        const stmts = parameter.$ref.split('/')
-        return stmts[stmts.length - 1]
+        codeLines.push(`${key} ${SchemaObjectToStruct(parameter)}`)
+        continue // 跳过后续处理
       }
 
       if (parameter.schema) {
-        const struct = schemaObjectToStruct(parameter.schema)
+        const struct = SchemaObjectToStruct(parameter.schema)
         const required = parameter.required == true ? '*' : ''
         const fields = structFieldsMap.get(parameter.in) || []
         fields.push(`${parameter.name} ${required}${struct}`)
@@ -113,9 +126,17 @@ function OperationObjectToRequestStruct(schema: OperationObject): string {
       }
 
       if (parameter.content) {
-        throw 'unsupported parameter type'
-      }
+        if (Object.keys(parameter.content).length !== 1) {
+          throw 'unsupported parameter type'
+        }
 
+        const content = parameter.content[0]
+        if (content.schema) {
+          const struct = SchemaObjectToStruct(content.schema)
+          const required = parameter.required == true ? '*' : ''
+          codeLines.push(`${parameter.name} ${required}${struct}`)
+        }
+      }
     }
 
     for (const [inType, fields] of structFieldsMap.entries()) {
@@ -133,7 +154,7 @@ function OperationObjectToRequestStruct(schema: OperationObject): string {
   if (schema.requestBody) {
     if (isReferenceObject(schema.requestBody)) {
       const stmts = schema.requestBody.$ref.split('/')
-      codeLines.push(`body ${stmts[stmts.length - 1]}`)
+      codeLines.push(`content ${stmts[stmts.length - 1]}`)
     } else {
       if (Object.keys(schema.requestBody.content).length != 1) {
         throw 'unsupported'
@@ -146,7 +167,7 @@ function OperationObjectToRequestStruct(schema: OperationObject): string {
       }
 
       const required = schema.requestBody.required ? '*' : ''
-      codeLines.push(`body ${required}${schemaObjectToStruct(body.schema)}`)
+      codeLines.push(`content ${required}${SchemaObjectToStruct(body.schema)}`)
     }
   }
 
@@ -155,20 +176,43 @@ function OperationObjectToRequestStruct(schema: OperationObject): string {
 }
 
 function OperationObjectToResponseStruct(schema: OperationObject): string {
-  const codeLines: string[] = [`struct {`]
+  // design:
+  // struct {
+  //   content struct{}
+  //   header struct{}
+  // }
 
-  for (const key in schema.responses) {
-    const response = schema.responses[key]
-    if (key.toLowerCase() === 'default') {
-      codeLines.push(`default ${}`)
-
-    } else {
-
+  function ResponseObjectToStruct(schema: ResponseObject): string {
+    if (schema.content == null) {
+      throw 'unsupported parameter type'
     }
+
+    if (Object.keys(schema.content).length !== 1) {
+      throw 'unsupported parameter type'
+    }
+    const content = schema.content[0]
+    return SchemaObjectToStruct(content.schema!)
   }
 
+  const codeLines: string[] = [`struct {`]
 
-  return ''
+  const responseKeys = Object.keys(schema.responses)
+  if (responseKeys.length !== 1) {
+    throw 'unsupported'
+  }
+
+  const response = schema.responses[responseKeys[0]]
+
+  if (isReferenceObject(response)) {
+    const stmts = response.$ref.split('/')
+    codeLines.push(`content ${stmts[stmts.length - 1]}`)
+  } else if (isSchemaObject(response)) {
+    const struct = ResponseObjectToStruct(response)
+    codeLines.push(`content ${struct}`)
+  }
+
+  codeLines.push('}')
+  return codeLines.join('\n')
 }
 
 registerTemplateCommand('checkSupportedVersion', (args: [Document]): string => {
@@ -184,15 +228,15 @@ registerTemplateCommand('test', (args: [SchemaObject, string]): string => {
   const [schema, name] = args
 
   if (isArraySchemaObject(schema)) {
-    return `type ${toFieldNames(name)} = ${schemaObjectToStruct(schema)}`
+    return `type ${toFieldName(name)} = ${SchemaObjectToStruct(schema)}`
   }
 
   if (isNonArraySchemaObject(schema)) {
-    return `type ${toFieldNames(name)} = ${schemaObjectToStruct(schema)}`
+    return `type ${toFieldName(name)} = ${SchemaObjectToStruct(schema)}`
   }
 
   if (isReferenceObject(schema)) {
-    return `type ${toFieldNames(name)} = ${schemaObjectToStruct(schema)}`
+    return `type ${toFieldName(name)} = ${SchemaObjectToStruct(schema)}`
   }
 
   throw 'unsupported schema type'
@@ -518,3 +562,6 @@ interface TagObject {
   description?: string
   externalDocs?: ExternalDocumentationObject
 }
+
+declare type TemplateCommand<T extends any[]> = (args: T) => string
+declare function registerTemplateCommand<T extends any[]>(name: string, command: TemplateCommand<T>): void

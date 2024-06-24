@@ -1,4 +1,6 @@
-{{ checkSupportedVersion . }}
-{{ range $key, $value := .components.schemas }}
-{{ test  $value $key }}
+// model
+{{ rang $key, $value := . }}
+{{if eq $key "components" }}
+
 {{end}}
+{{ end }}
