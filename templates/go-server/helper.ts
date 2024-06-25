@@ -1,3 +1,7 @@
+function ObjectKeys<T extends object>(target: T): Array<keyof T> {
+  return Object.keys(target) as unknown as any
+}
+
 function toFieldName(value: string, isPublic = true): string {
   // 去除前后空格
   value = value.trim()
@@ -36,6 +40,13 @@ function isNonArraySchemaObject(schema: unknown): schema is NonArraySchemaObject
 
 function isSchemaObject(schema: unknown): schema is SchemaObject {
   return isArraySchemaObject(schema) || isNonArraySchemaObject(schema)
+}
+
+function isParameterObject(schema: unknown): schema is ParameterObject {
+  return schema != null
+    && typeof schema === 'object'
+    && 'in' in schema
+    && 'name' in schema
 }
 
 function SchemaObjectToStruct(schema: SchemaObject | ReferenceObject): string {
@@ -224,27 +235,141 @@ registerTemplateCommand('checkSupportedVersion', (args: [Document]): string => {
   return ''
 })
 
-registerTemplateCommand('test', (args: [SchemaObject, string]): string => {
-  const [schema, name] = args
+registerTemplateCommand('structs', (args: [Document]): string => {
+  const [document] = args
+  const codeLines: string[] = []
 
-  if (isArraySchemaObject(schema)) {
-    return `type ${toFieldName(name)} = ${SchemaObjectToStruct(schema)}`
+  if (document.components) {
+    const { components } = document
+
+    if (components.schemas) {
+      for (const key in components.schemas) {
+        const schema = components.schemas[key]
+        if (isArraySchemaObject(schema)) {
+          codeLines.push(`type ${toFieldName(key)} = ${SchemaObjectToStruct(schema)}`)
+        }
+
+        if (isNonArraySchemaObject(schema)) {
+          codeLines.push(`type ${toFieldName(key)} = ${SchemaObjectToStruct(schema)}`)
+        }
+
+        if (isReferenceObject(schema)) {
+          codeLines.push(`type ${toFieldName(key)} = ${SchemaObjectToStruct(schema)}`)
+        }
+      }
+    }
+
+    if (components.parameters) {
+      for (const key in components.parameters) {
+        const schema = components.parameters[key]
+        if (isReferenceObject(schema)) {
+          codeLines.push(`type ${toFieldName(key)} = ${SchemaObjectToStruct(schema)}`)
+        }
+
+        if (isParameterObject(schema)) {
+          codeLines.push(`type ${toFieldName(key)} = ${schema}`)
+        }
+      }
+    }
   }
 
-  if (isNonArraySchemaObject(schema)) {
-    return `type ${toFieldName(name)} = ${SchemaObjectToStruct(schema)}`
+  return codeLines.join('\n')
+})
+
+registerTemplateCommand('services', (args: [Document]): string => {
+  const [document] = args
+  const codeLines: string[] = []
+
+  if (document.components) {
+    const { components } = document
+
+    if (components.schemas) {
+      for (const key in components.schemas) {
+        const schema = components.schemas[key]
+        if (isArraySchemaObject(schema)) {
+          codeLines.push(`type ${toFieldName(key)} = ${SchemaObjectToStruct(schema)}`)
+        }
+
+        if (isNonArraySchemaObject(schema)) {
+          codeLines.push(`type ${toFieldName(key)} = ${SchemaObjectToStruct(schema)}`)
+        }
+
+        if (isReferenceObject(schema)) {
+          codeLines.push(`type ${toFieldName(key)} = ${SchemaObjectToStruct(schema)}`)
+        }
+      }
+    }
+
+    if (components.parameters) {
+      for (const key in components.parameters) {
+        const schema = components.parameters[key]
+        if (isReferenceObject(schema)) {
+          codeLines.push(`type ${toFieldName(key)} = ${SchemaObjectToStruct(schema)}`)
+        }
+
+        if (isParameterObject(schema)) {
+          codeLines.push(`type ${toFieldName(key)} = ${schema}`)
+        }
+      }
+    }
   }
 
-  if (isReferenceObject(schema)) {
-    return `type ${toFieldName(name)} = ${SchemaObjectToStruct(schema)}`
+  return codeLines.join('\n')
+})
+
+registerTemplateCommand('routers', (args: [Document]): string => {
+  const [document] = args
+  const codeLines: string[] = [
+    `type Router struct {`,
+    ` service *Service`,
+    ` router *gin.Router`,
+    `}`
+  ]
+
+  const initCodeLines: string[] = [
+    `func (router *Router) Init() error {`
+  ]
+
+  function pathToGinPath(path: string): string {
+    return path.replaceAll(/{([^}]+)}/, ":$1")
   }
 
-  throw 'unsupported schema type'
+  if (document.paths) {
+    const paths: string[] = Object.keys(document.paths)
+    for (const path in paths) {
+      const pathItem = document.paths[path]
+      const httpMethods: HttpMethods[] = [
+        HttpMethods.GET,
+        HttpMethods.PUT,
+        HttpMethods.POST,
+        HttpMethods.DELETE,
+        HttpMethods.OPTIONS,
+        HttpMethods.HEAD,
+        HttpMethods.PATCH,
+        HttpMethods.TRACE,
+      ]
+
+      for (const method of httpMethods) {
+        const operationObject = pathItem![method]
+        initCodeLines.push(`router.router.GET(${pathToGinPath(path)}, router.${operationObject!.operationId})`)
+      }
+    }
+  }
+
+  return codeLines.join('\n')
+})
+
+registerTemplateCommand('server', (args: [Document]): string => {
+  const codeLines: string[] = [
+    `func createServer(serverOptions *ServerOptions){`
+  ]
+
+  codeLines.push('}')
+  return codeLines.join('\n')
 })
 
 // copy from https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md
-
-interface Document<T extends {} = {}> {
+type Document<T extends {} = {}> = {
   openapi: string
   info: InfoObject
   servers?: ServerObject[]
